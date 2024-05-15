@@ -83,7 +83,7 @@ const App: React.FC = () => {
     setPasswordLength([length]);
   };
 
-  const generatePassword = (length, easyToPronounce, easyToRead, passwordClose) => {
+  const generatePassword = (length: any, easyToPronounce:any, easyToRead:any, passwordClose:any) => {
     const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
     const numbers = "0123456789";

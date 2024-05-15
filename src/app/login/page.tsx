@@ -26,7 +26,7 @@ const LoginPage = () => {
           <div className="absolute -top-40 -right-0 w-80 h-80 border-4 rounded-full border-opacity-30 border-t-8"></div>
           <div className="absolute -top-20 -right-20 w-80 h-80 border-4 rounded-full border-opacity-30 border-t-8"></div>
         </div>
-        <div className="flex md:w-1/2 justify-center py-10 items-center bg-background">
+        <div className="flex md:w-1/2 justify-center py-10 items-center bg-background md:mt-0 mt-[200px]">
           <form className="bg-background shadow-md rounded px-8 pt-6 pb-8 mb-4">
             <h1 className="text-gray-200 font-bold text-2xl mb-1">
               Olá Novamente! 🙋‍♀️

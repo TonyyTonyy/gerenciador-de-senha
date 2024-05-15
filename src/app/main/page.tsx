@@ -1,6 +1,6 @@
 "use client";
 import React, { useEffect, useState } from "react";
-import { Layout, Menu, theme } from "antd";
+import { ConfigProvider, Layout, Menu, theme } from "antd";
 import {
   CheckIcon,
   ChevronRightIcon,
@@ -68,10 +68,11 @@ const App: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [easyToPronounce, setEasyToPronounce] = useState(false);
   const [easyToRead, setEasyToRead] = useState(false);
+  const [passwordClose, setPasswordClose] = useState("");
 
   useEffect(() => {
     generateNewPassword();
-  }, [passwordLength, easyToPronounce, easyToRead]);
+  }, [passwordLength, easyToPronounce, easyToRead, passwordClose]);
 
   const handleSliderChange = (value: number[]) => {
     setPasswordLength(value);
@@ -82,49 +83,63 @@ const App: React.FC = () => {
     setPasswordLength([length]);
   };
 
-  const generatePassword = (
-    length: any,
-    easyToPronounce: any,
-    easyToRead: any
-  ) => {
+  const generatePassword = (length, easyToPronounce, easyToRead, passwordClose) => {
     const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
     const numbers = "0123456789";
     const specialChars = "!@#$%^&*?";
-
+  
     let allowedChars = "";
     if (easyToPronounce) {
       allowedChars += "aeiouAEIOU";
     } else {
       allowedChars += uppercaseChars + lowercaseChars;
     }
-
+  
     if (easyToRead) {
       allowedChars += "23456789";
     } else {
       allowedChars += numbers + specialChars;
     }
-
+  
+    // Inclui a palavra obrigatória se especificada
+    if (passwordClose) {
+      length -= passwordClose.length; // Reduz o comprimento para o resto da senha
+      if (length < 0) {
+        throw new Error("Length too short to include specified word");
+      }
+    }
+  
     let password = "";
     let hasSpecialChar = false;
     for (let i = 0; i < length; i++) {
       let randomIndex = Math.floor(Math.random() * allowedChars.length);
-      if (easyToPronounce && !hasSpecialChar && i === length - 1) {
-        const specialIndex = Math.floor(Math.random() * specialChars.length);
-        password += specialChars[specialIndex];
-        hasSpecialChar = true;
-      } else {
-        password += allowedChars[randomIndex];
-      }
+      password += allowedChars[randomIndex];
     }
-
+  
+    // Inclui a palavra em uma posição aleatória na senha
+    if (passwordClose) {
+      const position = Math.floor(Math.random() * (password.length + 1));
+      password = password.slice(0, position) + passwordClose + password.slice(position);
+    }
+  
+    // Assegura que pelo menos um caractere especial é usado se 'easyToPronounce' for true
+    if (easyToPronounce && !password.split('').some(char => specialChars.includes(char))) {
+      const specialIndex = Math.floor(Math.random() * specialChars.length);
+      const replacePosition = Math.floor(Math.random() * password.length);
+      password = password.substring(0, replacePosition) + specialChars[specialIndex] + password.substring(replacePosition + 1);
+    }
+  
     return password;
   };
+  
+  
   const generateNewPassword = () => {
     const newPassword = generatePassword(
       passwordLength,
       easyToPronounce,
-      easyToRead
+      easyToRead,
+      passwordClose
     );
     setPassword(newPassword);
     setCopied(false);
@@ -152,13 +167,23 @@ const App: React.FC = () => {
         <div className="flex justify-center w-full p-6 bg-slate-900">
           <Image alt="logo" src={"/unex-logo.png"} width={100} height={100} />
         </div>
-        <Menu
-          theme="dark"
-          mode="inline"
-          className="space-y-3 "
-          defaultSelectedKeys={["1"]}
-          items={items}
-        />
+        <ConfigProvider
+          theme={{
+            components: {
+              Menu: {
+                darkItemSelectedBg: "rgba(255, 255, 255, 0.1)",
+              },
+            },
+          }}
+        >
+          <Menu
+            theme="dark"
+            mode="inline"
+            className="space-y-3 "
+            defaultSelectedKeys={["1"]}
+            items={items}
+          />
+        </ConfigProvider>
       </Sider>
       <Layout className="bg-gray-950/90">
         <Header style={{ padding: 0 }} className="bg-gray-950/60">
@@ -215,19 +240,23 @@ const App: React.FC = () => {
                   Todas as senhas
                 </h1>
                 <div className="flex items-center gap-2">
-                  <Button size="icon" variant="ghost">
+                  <Button size="icon" variant="ghost" className="opacity-40">
                     <SearchIcon className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                   </Button>
-                  <Button size="icon" variant="ghost">
+                  <Button size="icon" variant="ghost" className="opacity-45">
                     <SettingsIcon className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                   </Button>
                   <Dialog>
                     <DialogTrigger asChild>
-                      <Button size="icon" variant="ghost">
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="hover:opacity-85"
+                      >
                         <PlusIcon className="h-5 w-5 text-gray-700 dark:text-gray-200" />
                       </Button>
                     </DialogTrigger>
-                    <DialogContent className="max-w-[500px]">
+                    <DialogContent className="max-w-[500px] md:max-w-[600px]">
                       <DialogHeader>
                         <DialogTitle>Personalize sua senha</DialogTitle>
                         <DialogDescription>
@@ -302,7 +331,14 @@ const App: React.FC = () => {
                           </Label>
                         </div>
                       </div>
-                      <DialogFooter className="flex flex-col">
+                      <DialogFooter className="flex flex-col gap-4">
+                        <div className="flex flex-col space-y-2">
+                          <Label>Conter a Palavra: </Label>
+                          <Input value={passwordClose} onChange={(e) => setPasswordClose(e.target.value)} maxLength={Math.round(passwordLength[0] / 2)} />
+                          <DialogDescription>
+                            (Até {Math.round(passwordLength[0] / 2)} caracteres)
+                          </DialogDescription>
+                        </div>
                         <div className="flex items-center gap-4">
                           <Button
                             size="icon"
@@ -338,9 +374,9 @@ const App: React.FC = () => {
                 <Collapsible className="rounded-lg border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-900">
                   <CollapsibleTrigger className="flex items-center justify-between gap-4 px-6 py-4 [&[data-state=open]>svg]:rotate-90">
                     <div className="flex items-center gap-2">
-                      <StarIcon className="h-5 w-5 text-primary" />
+                      <StarIcon className="h-5 w-5 text-primary text-yellow-300" />
                       <span className="font-medium text-gray-900 dark:text-white">
-                        Favoritos (7)
+                        Favoritos (3)
                       </span>
                     </div>
                     <ChevronRightIcon className="h-5 w-5 text-gray-700 dark:text-gray-200 transition-transform" />
@@ -348,13 +384,13 @@ const App: React.FC = () => {
                   <CollapsibleContent className="grid grid-cols-1 gap-4 p-6 sm:grid-cols-2 md:grid-cols-3">
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
-                        <div className="w-full rounded-lg aspect-square flex-1 flex items-center">
-                          <img
+                        <div className="w-full rounded-lg aspect-square flex-1 flex items-center justify-center">
+                          <Image
                             alt="Placeholder"
-                            className="w-full rounded-lg object-fill"
-                            height={80}
-                            src="/Google-logo-PNG-Picture.png"
-                            width={80}
+                            className="rounded-lg object-fill max-h-[100px]"
+                            height={140}
+                            src="https://www.pngall.com/wp-content/uploads/5/Google-Logo-PNG-Picture.png"
+                            width={190}
                           />
                         </div>
                         <div className="text-center">
@@ -367,7 +403,7 @@ const App: React.FC = () => {
                     </Card>
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
-                        <img
+                        <Image
                           alt="Placeholder"
                           className="aspect-square w-full rounded-lg object-fill"
                           height={80}
@@ -384,13 +420,13 @@ const App: React.FC = () => {
                     </Card>
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
-                        <div className="w-full rounded-lg aspect-square flex-1 flex items-center">
-                          <img
+                        <div className="w-full rounded-lg aspect-square flex-1 flex items-center justify-center">
+                          <Image
                             alt="Placeholder"
-                            className="w-full rounded-lg object-fill"
-                            height={80}
-                            src="Twitter_logo.svg.png"
-                            width={80}
+                            className="rounded-lg"
+                            height={130}
+                            src="/Twitter_logo.svg.png"
+                            width={170}
                           />
                         </div>
                         <div className="text-center">
@@ -414,7 +450,7 @@ const App: React.FC = () => {
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
                         <div className="w-full rounded-lg aspect-square flex-1 flex items-center">
-                          <img
+                          <Image
                             alt="Placeholder"
                             className="w-full rounded-lg object-cover"
                             height={80}
@@ -433,7 +469,7 @@ const App: React.FC = () => {
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
                         <div className="w-full rounded-lg aspect-square flex-1 flex items-center">
-                          <img
+                          <Image
                             alt="Placeholder"
                             className="w-full rounded-lg object-fill"
                             height={80}
@@ -452,7 +488,7 @@ const App: React.FC = () => {
                     <Card>
                       <CardContent className="flex flex-col items-center justify-center gap-2 p-4 cursor-pointer hover:opacity-85">
                         <div className="w-full rounded-lg aspect-square flex-1 flex items-center">
-                          <img
+                          <Image
                             alt="Placeholder"
                             className="w-full rounded-lg object-fill"
                             height={80}
@@ -478,7 +514,7 @@ const App: React.FC = () => {
           style={{ textAlign: "center" }}
           className="bg-gray-950/60 text-white"
         >
-          Unex ©{new Date().getFullYear()} Criado por Grupo 1
+          Unex ©{new Date().getFullYear()} Trabalho do Grupo 1
         </Footer>
       </Layout>
     </Layout>

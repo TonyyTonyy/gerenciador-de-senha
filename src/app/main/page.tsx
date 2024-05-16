@@ -45,6 +45,12 @@ import {
 import { CardContent, Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
 import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Tooltip,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { TooltipContent } from "@radix-ui/react-tooltip";
 const { Header, Content, Footer, Sider } = Layout;
 const icons = [Lock, CreditCardIcon, Landmark, Wifi];
 const labels = [
@@ -74,6 +80,10 @@ const App: React.FC = () => {
     generateNewPassword();
   }, [passwordLength, easyToPronounce, easyToRead, passwordClose]);
 
+  useEffect(() => {
+    setPasswordClose("");
+  }, [passwordLength]);
+
   const handleSliderChange = (value: number[]) => {
     setPasswordLength(value);
   };
@@ -83,25 +93,30 @@ const App: React.FC = () => {
     setPasswordLength([length]);
   };
 
-  const generatePassword = (length: any, easyToPronounce:any, easyToRead:any, passwordClose:any) => {
+  const generatePassword = (
+    length: any,
+    easyToPronounce: any,
+    easyToRead: any,
+    passwordClose: any
+  ) => {
     const uppercaseChars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
     const lowercaseChars = "abcdefghijklmnopqrstuvwxyz";
     const numbers = "0123456789";
     const specialChars = "!@#$%^&*?";
-  
+
     let allowedChars = "";
     if (easyToPronounce) {
       allowedChars += "aeiouAEIOU";
     } else {
       allowedChars += uppercaseChars + lowercaseChars;
     }
-  
+
     if (easyToRead) {
       allowedChars += "23456789";
     } else {
       allowedChars += numbers + specialChars;
     }
-  
+
     // Inclui a palavra obrigatória se especificada
     if (passwordClose) {
       length -= passwordClose.length; // Reduz o comprimento para o resto da senha
@@ -109,31 +124,37 @@ const App: React.FC = () => {
         throw new Error("Length too short to include specified word");
       }
     }
-  
+
     let password = "";
     let hasSpecialChar = false;
     for (let i = 0; i < length; i++) {
       let randomIndex = Math.floor(Math.random() * allowedChars.length);
       password += allowedChars[randomIndex];
     }
-  
+
     // Inclui a palavra em uma posição aleatória na senha
     if (passwordClose) {
       const position = Math.floor(Math.random() * (password.length + 1));
-      password = password.slice(0, position) + passwordClose + password.slice(position);
+      password =
+        password.slice(0, position) + passwordClose + password.slice(position);
     }
-  
+
     // Assegura que pelo menos um caractere especial é usado se 'easyToPronounce' for true
-    if (easyToPronounce && !password.split('').some(char => specialChars.includes(char))) {
+    if (
+      easyToPronounce &&
+      !password.split("").some((char) => specialChars.includes(char))
+    ) {
       const specialIndex = Math.floor(Math.random() * specialChars.length);
       const replacePosition = Math.floor(Math.random() * password.length);
-      password = password.substring(0, replacePosition) + specialChars[specialIndex] + password.substring(replacePosition + 1);
+      password =
+        password.substring(0, replacePosition) +
+        specialChars[specialIndex] +
+        password.substring(replacePosition + 1);
     }
-  
+
     return password;
   };
-  
-  
+
   const generateNewPassword = () => {
     const newPassword = generatePassword(
       passwordLength,
@@ -232,7 +253,7 @@ const App: React.FC = () => {
             style={{
               minHeight: 360,
             }}
-            className="h-full bg-gray-900/85 max-h-[534px] overflow-auto rounded-[30px]"
+            className="h-full bg-gray-900/85 max-h-[80vh] overflow-auto rounded-[30px]"
           >
             <>
               <header className="flex items-center justify-between bg-gray-100 px-6 py-4 rounded-t-[30px] dark:bg-gray-800">
@@ -334,7 +355,11 @@ const App: React.FC = () => {
                       <DialogFooter className="flex flex-col gap-4">
                         <div className="flex flex-col space-y-2">
                           <Label>Conter a Palavra: </Label>
-                          <Input value={passwordClose} onChange={(e) => setPasswordClose(e.target.value)} maxLength={Math.round(passwordLength[0] / 2)} />
+                          <Input
+                            value={passwordClose}
+                            onChange={(e) => setPasswordClose(e.target.value)}
+                            maxLength={Math.round(passwordLength[0] / 2)}
+                          />
                           <DialogDescription>
                             (Até {Math.round(passwordLength[0] / 2)} caracteres)
                           </DialogDescription>
@@ -366,6 +391,18 @@ const App: React.FC = () => {
                           />
                         </div>
                       </DialogFooter>
+                      <div className="flex w-full justify-end"> 
+                          <TooltipProvider>
+                            <Tooltip delayDuration={200}>
+                              <TooltipTrigger>
+                                <Button variant="outline">Salvar</Button>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                🚧 Em Desenvolvimento 🚧
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        </div>
                     </DialogContent>
                   </Dialog>
                 </div>
